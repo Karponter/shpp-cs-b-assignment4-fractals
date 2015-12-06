@@ -14,9 +14,9 @@ class SierpinskiTriangleDrawer {
 private:
     GWindow * _canvas;
     vector<GPoint> _vertex;
-    static random_device _rd;
-    static mt19937 _eng(_rd());
-    static uniform_int_distribution _distr(0, 2);
+    std::mt19937 *eng;
+    std::uniform_int_distribution<>* distr;
+
 
 public:
 
@@ -25,8 +25,9 @@ public:
     SierpinskiTriangleDrawer(double window_W, double window_H) {
 
         // hardware random number generating seeding and limiting
-         eng(_rd());
-        uniform_int_distribution<> distr(0, 2);
+        std::random_device rd; // obtain a random number from hardware
+        eng = new std::mt19937(rd()); // seed the generator
+        distr = new std::uniform_int_distribution<>(0, 2); // define the range
 
         // creating a canvas
         _canvas = new GWindow(window_W, window_H);
@@ -35,7 +36,7 @@ public:
         double midpoint_x = window_W / 2;
         double midpoint_y = window_H / 2;
         for (int i = 0; i < 3; ++i) {
-            _vertex.add(GPoint(
+            _vertex.push_back(GPoint(
                 min(midpoint_y, midpoint_x) * 0.7 * cos(i*MATH_PI*2/3) + midpoint_x,
                 min(midpoint_y, midpoint_x) * 0.7 * sin(i*MATH_PI*2/3) + midpoint_y
             ));
@@ -44,7 +45,7 @@ public:
 
     // calculates position of middlepoint for 2 GPoint objects
     // returns new GPoint with calculated coordinates
-    GPoint middlePoint(GPoint & p1, GPoint & p1) {
+    GPoint middlePoint(GPoint & p1, GPoint & p2) {
         int mid_x = (p1.getX()+p2.getX()) / 2;
         int mid_y = (p1.getY()+p2.getY()) / 2;
         return GPoint(mid_x, mid_y);
@@ -57,22 +58,26 @@ public:
 
     // recursive function that draws fractal to canvas
     void drawFractal(GPoint & curr) {
-        GPoint temp = searchMiddle(curr, _vertex.get(_distr()));
+        GPoint temp = middlePoint(curr, getRandomVertexPoint());
         drawPoint(temp);
         drawFractal(temp);
     }
 
-    ~SierpinskiTriangleDrawer() { 
-        _canvas.close();
+    GPoint & getRandomVertexPoint() {
+        return _vertex.at(distr->operator()(*eng));
+    }
+
+    ~SierpinskiTriangleDrawer() {
+        _canvas->close();
         exitGraphics();
-        delete _canvas; 
+        delete _canvas;
     }
 };
 
 int main() {
 
-    SierpinskiTriangleDrawer a(600, 600);
-    a.drawFractal();
+    SierpinskiTriangleDrawer a(700, 100);
+    a.drawFractal(a.getRandomVertexPoint());
 
     return 0;
 }
